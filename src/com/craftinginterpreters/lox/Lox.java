@@ -31,7 +31,8 @@ public class Lox {
         run(new String(bytes, Charset.defaultCharset()));
 
         // Indicate an error in the exit code
-        if (hadError) System.exit(65);
+        if (hadError)
+            System.exit(65);
     }
 
     // Start up code of interactive REPL version of interpreter, wrapper for run
