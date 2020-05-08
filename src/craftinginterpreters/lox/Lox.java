@@ -9,7 +9,9 @@ import java.nio.file.Paths;
 import java.util.List;
 
 public class Lox {
+    private static final Interpreter interpreter = new Interpreter();
     static boolean hadError = false;
+    static boolean hadRuntimeError = false;
 
     /* This is where the magic begins: The interpreter can either be fed a file (second else if)
         or it can be run interactively (last else)
@@ -33,6 +35,8 @@ public class Lox {
         // Indicate an error in the exit code
         if (hadError)
             System.exit(65);
+        if (hadRuntimeError)
+            System.exit(70);
     }
 
     // Start up code of interactive REPL version of interpreter, wrapper for run
@@ -58,25 +62,33 @@ public class Lox {
         if (hadError)
             return;
 
-        System.out.println(new AstPrinter().print(expression));
+        interpreter.interpret(expression);
     }
 
-    // Error handling methods
-    static void error(int line, String message) {
-        report(line, "", message);
-    }
-
+    // ERROR HANDLING METHODS
     private static void report(int line, String where, String message) {
         System.err.println("[line " + line +"] Error" + where + ": " + message);
         hadError = true;
     }
 
+    // Scanner error
+    static void error(int line, String message) {
+        report(line, "", message);
+    }
+
+    // Parse error
     static void error(Token token, String message) {
         if (token.type == TokenType.EOF) {
             report(token.line, " at end", message);
         } else {
             report(token.line, " at '" + token.lexeme + "'", message);
         }
+    }
+
+    // Runtime (evaluation) error
+    static void runtimeError(RuntimeError error) {
+        System.err.println(error.getMessage() + "\n[line " + error.token.line +"]");
+        hadRuntimeError = true;
     }
 
 }
