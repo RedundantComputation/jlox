@@ -26,7 +26,7 @@ class Parser {
     }
 
     private Expr expression() {
-        return equality();
+        return assignment();
     }
 
     private Stmt declaration() {
@@ -44,6 +44,9 @@ class Parser {
     private Stmt statement() {
         if (match(PRINT))
             return printStatement();
+
+        if (match(LEFT_BRACE))
+            return new Stmt.Block(block());
 
         return expressionStatement();
     }
@@ -70,6 +73,41 @@ class Parser {
         Expr expr = expression();
         consume(SEMICOLON, "Expect ';' after expression.");
         return new Stmt.Expression(expr);
+    }
+
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+        }
+
+        consume(RIGHT_BRACE, "Expect '}' after block.");
+        return statements;
+    }
+
+    // Allows us to overcome one-token lookahead problem when evaluating l-values
+    private Expr assignment() {
+        Expr expr = equality();
+
+        if (match(EQUAL)) {
+            Token equals = previous();
+            Expr value = assignment();
+
+
+            if (expr instanceof Expr.Variable) {
+                /* this trick looks at the left-hand side expression, figures out what
+                    kind of assignment target it is, and converts the r-value expression
+                    that it is into an l-value representation
+                 */
+                Token name = ((Expr.Variable) expr).name;
+                return new Expr.Assign(name,value);
+            }
+
+            error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
     }
 
     /* TODO: Unify redundant code using helper that takes a list of token types and an
